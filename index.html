@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Speed Test</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+
+        :root {
+            --primary: #00f2ff; /* Cyan Neon */
+            --secondary: #bd00ff; /* Purple Neon */
+            --bg: #0d0d12;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(189, 0, 255, 0.15) 0%, transparent 40%);
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Main Glass Card */
+        .container {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 40px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* The Gauge */
+        .gauge-wrapper {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 30px;
+        }
+
+        .gauge-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 180deg, 
+                var(--border) 0deg, 
+                var(--border) 180deg, 
+                transparent 180deg
+            );
+            transform: rotate(-90deg);
+        }
+
+        .gauge-fill {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 180deg, 
+                var(--primary) 0deg, 
+                var(--secondary) 0deg, 
+                transparent 0deg
+            );
+            transform: rotate(-90deg);
+            transition: --angle 0.1s ease;
+            z-index: 2;
+            /* Mask to create the arc look */
+            mask: radial-gradient(transparent 65%, black 66%);
+            -webkit-mask: radial-gradient(transparent 65%, black 66%);
+        }
+
+        .gauge-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 3;
+        }
+
+        .speed-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .speed-unit {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Stats Grid */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        /* Start Button */
+        .btn-start {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            padding: 15px 50px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.5);
+        }
+
+        .btn-start:disabled {
+            background: #333;
+            cursor: not-allowed;
+            box-shadow: none;
+            color: #666;
+        }
+
+        /* Status Text */
+        .status {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--primary);
+            height: 20px;
+        }
+
+        /* CSS Custom Property for animation */
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SPEEDTEST<span style="font-weight:300; font-size:0.8em; opacity:0.7">.PRO</span></h1>
+
+    <div class="gauge-wrapper">
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="gauge-center">
+            <div class="speed-value" id="mainDisplay">0</div>
+            <div class="speed-unit">Mbps</div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-label">Download</div>
+            <div class="stat-value" id="downloadRes">--</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Upload</div>
+            <div class="stat-value" id="uploadRes">--</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Ping</div>
+            <div class="stat-value" id="pingRes">-- ms</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Jitter</div>
+            <div class="stat-value" id="jitterRes">-- ms</div>
+        </div>
+    </div>
+
+    <button class="btn-start" id="startBtn" onclick="startTest()">GO</button>
+    <div class="status" id="statusText">Ready to test</div>
+</div>
+
+<script>
+    const gaugeFill = document.getElementById('gaugeFill');
+    const mainDisplay = document.getElementById('mainDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const statusText = document.getElementById('statusText');
+    
+    // Result elements
+    const downloadRes = document.getElementById('downloadRes');
+    const uploadRes = document.getElementById('uploadRes');
+    const pingRes = document.getElementById('pingRes');
+    const jitterRes = document.getElementById('jitterRes');
+
+    function startTest() {
+        // Reset UI
+        startBtn.disabled = true;
+        downloadRes.innerText = "--";
+        uploadRes.innerText = "--";
+        mainDisplay.innerText = "0";
+        setGauge(0);
+
+        // Simulation Steps
+        runPhase('Ping', () => {
+            const ping = Math.floor(Math.random() * 20) + 10;
+            const jitter = Math.floor(Math.random() * 5) + 1;
+            pingRes.innerText = ping + " ms";
+            jitterRes.innerText = jitter + " ms";
+        })
+        .then(() => runPhase('Download', updateDownload))
+        .then(() => runPhase('Upload', updateUpload))
+        .then(() => {
+            statusText.innerText = "Test Complete";
+            startBtn.disabled = false;
+            startBtn.innerText = "RESTART";
+            setGauge(0);
+        });
+    }
+
+    function runPhase(name, actionCallback) {
+        return new Promise(resolve => {
+            statusText.innerText = `Testing ${name}...`;
+            
+            if (name === 'Ping') {
+                setTimeout(() => {
+                    actionCallback();
+                    resolve();
+                }, 1000);
+            } else {
+                // Simulate speed fluctuation for Download/Upload
+                let duration = 3000; // 3 seconds test
+                let start = Date.now();
+                
+                let interval = setInterval(() => {
+                    let timePassed = Date.now() - start;
+                    if (timePassed > duration) {
+                        clearInterval(interval);
+                        resolve();
+                        return;
+                    }
+                    // Generate random speed data
+                    actionCallback();
+                }, 100);
+            }
+        });
+    }
+
+    // Update functions for visuals
+    function updateDownload() {
+        // Simulating speeds between 50 and 150 Mbps
+        let speed = Math.floor(Math.random() * (150 - 50 + 1)) + 50;
+        mainDisplay.innerText = speed;
+        downloadRes.innerText = speed;
+        setGauge(speed);
+    }
+
+    function updateUpload() {
+        // Simulating speeds between 20 and 50 Mbps
+        let speed = Math.floor(Math.random() * (50 - 20 + 1)) + 20;
+        mainDisplay.innerText = speed;
+        uploadRes.innerText = speed;
+        setGauge(speed * 2); // Multiply by 2 just to make gauge move more for lower upload speeds
+    }
+
+    function setGauge(value) {
+        // Max speed for gauge is 200 Mbps
+        const maxSpeed = 200;
+        let percentage = (value / maxSpeed) * 100;
+        if(percentage > 100) percentage = 100;
+        
+        // Convert percentage to degrees (180deg represents 100%)
+        const degrees = (percentage / 100) * 180;
+        
+        // Update the gradient mask angle
+        gaugeFill.style.background = `conic-gradient(from 180deg, var(--primary) 0deg, var(--secondary) ${degrees}deg, transparent ${degrees}deg)`;
+    }
+</script>
+
+</body>
+</html>
